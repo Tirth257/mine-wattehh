@@ -9,10 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
-
+#include"Chunk.h"
 unsigned int program;
 int Width = 1000;
 int Height = 800;
+Chunk chunk1;
 
 void display()
 {
@@ -21,6 +22,9 @@ void display()
 
     glUseProgram(program);
 
+
+    chunk1.draw();
+    
     glutSwapBuffers();
 }
 
@@ -36,6 +40,10 @@ int main(int argc, char *argv[])
     Shader shader_1("vertex.glsl", "fragment.glsl");
     shader_1.use();
     program = shader_1.ID;
+
+    chunk1.GenerateTerrain();
+    chunk1.buildMesh();
+    chunk1.uploadToGPU();
 
     return 0;
 }
