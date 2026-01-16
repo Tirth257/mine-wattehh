@@ -2,4 +2,6 @@
 
 ## Phase 1:Basic Movement
 
-- [] Make Camera Class
+- [X] Make Camera Class
+- [] Render A Chunk
+- [] Camera Movement

@@ -4,6 +4,20 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 using namespace std;
+static const float face_vert[6][6][3] = {
+    // +X (right)
+    {{0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}},
+    // -X (left)
+    {{-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}},
+    // +Y (top)
+    {{-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, 0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5}},
+    // -Y (bottom)
+    {{-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}},
+    // +Z (front)
+    {{-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, {-0.5, 0.5, 0.5}},
+    // -Z (back)
+    {{-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5}}};
+
 class Chunk
 {
 private:
@@ -15,10 +29,24 @@ private:
     {
         if (x == -1 || y == -1 || z == -1 || x == SIZE || y == SIZE || z == SIZE)
         {
-            return false;
+            return true;
         }
 
         return (blocks[x][y][z].type == AIR);
+    }
+    void AddVerex(float x, float y, float z, float ox, float oy, float oz)
+    {
+        mesh.push_back(x + ox);
+        mesh.push_back(y + oy);
+        mesh.push_back(z + oz);
+    }
+
+    void AddFace(int face, int x, int y, int z)
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            AddVerex(x, y, z, face_vert[face][i][0], face_vert[face][i][1], face_vert[face][i][2]);
+        }
     }
 
 public:
@@ -49,57 +77,29 @@ public:
     }
     void buildMesh()
     {
+        mesh.clear();
         for (int x = 0; x < SIZE; x++)
         {
             for (int z = 0; z < SIZE; z++)
             {
                 for (int y = 0; y < SIZE; y++)
                 {
-                    for (int inX = -1; inX <= 1; inX += 2)
+                    if (isAir(x, y, z))
                     {
-                        if (isAir(x + inX, y, z))
-                        {
-                            vector<float> p1 = {x + inX * 0.5f, y + inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p2 = {x + inX * 0.5f, y - inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p3 = {x + inX * 0.5f, y - inX * 0.5f, z - inX * 0.5f};
-                            vector<float> p4 = {x + inX * 0.5f, y + inX * 0.5f, z - inX * 0.5f};
-
-                            mesh.insert(mesh.end(), p1.begin(), p1.end());
-                            mesh.insert(mesh.end(), p2.begin(), p2.end());
-                            mesh.insert(mesh.end(), p3.begin(), p3.end());
-                            mesh.insert(mesh.end(), p4.begin(), p4.end());
-                        }
+                        continue;
                     }
-                    for (int inX = -1; inX <= 1; inX += 2)
-                    {
-                        if (isAir(x, y + inX, z))
-                        {
-                            vector<float> p1 = {x + inX * 0.5f, y + inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p2 = {x - inX * 0.5f, y + inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p3 = {x - inX * 0.5f, y + inX * 0.5f, z - inX * 0.5f};
-                            vector<float> p4 = {x + inX * 0.5f, y + inX * 0.5f, z - inX * 0.5f};
-
-                            mesh.insert(mesh.end(), p1.begin(), p1.end());
-                            mesh.insert(mesh.end(), p2.begin(), p2.end());
-                            mesh.insert(mesh.end(), p3.begin(), p3.end());
-                            mesh.insert(mesh.end(), p4.begin(), p4.end());
-                        }
-                    }
-                    for (int inX = -1; inX <= 1; inX += 2)
-                    {
-                        if (isAir(x, y, z + inX))
-                        {
-                            vector<float> p1 = {x + inX * 0.5f, y + inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p2 = {x + inX * 0.5f, y - inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p3 = {x - inX * 0.5f, y - inX * 0.5f, z + inX * 0.5f};
-                            vector<float> p4 = {x - inX * 0.5f, y + inX * 0.5f, z + inX * 0.5f};
-
-                            mesh.insert(mesh.end(), p1.begin(), p1.end());
-                            mesh.insert(mesh.end(), p2.begin(), p2.end());
-                            mesh.insert(mesh.end(), p3.begin(), p3.end());
-                            mesh.insert(mesh.end(), p4.begin(), p4.end());
-                        }
-                    }
+                    if (isAir(x + 1, y, z))
+                        AddFace(0, x, y, z);
+                    if (isAir(x - 1, y, z))
+                        AddFace(1, x, y, z); // -X
+                    if (isAir(x, y + 1, z))
+                        AddFace(2, x, y, z); // +Y
+                    if (isAir(x, y - 1, z))
+                        AddFace(3, x, y, z); // -Y
+                    if (isAir(x, y, z + 1))
+                        AddFace(4, x, y, z); // +Z
+                    if (isAir(x, y, z - 1))
+                        AddFace(5, x, y, z); // -Z
                 }
             }
         }
@@ -112,12 +112,12 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
         glBufferData(GL_ARRAY_BUFFER, mesh.size() * sizeof(float), mesh.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(0, sizeof(float), GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
     }
     void draw()
     {
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
+        glDrawArrays(GL_TRIANGLES, 0, mesh.size() / 3); // Change Last Argument when adding U V etc..
     }
 };
