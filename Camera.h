@@ -9,16 +9,22 @@ private:
 protected:
     glm::vec3 cameraPos;
     glm::vec3 cameraDirection;
-    glm::vec3 target_lookAt;
+
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     glm::mat4 perspectiveMatrix = glm::mat4(1.0f);
 
+    glm::vec3 cam_up = glm::vec3(0,1,0);
+    glm::vec3 cam_right = glm::vec3(0,0,-1);
+
     float FOV = 90;
+
+    float cameraSpeed = 2;
+
+    float prevX=0;
+    float prevY =0;
+public:
     int width;
     int height;
-
-public:
-    float x, y, z;
     Camera(glm::vec3 cameraPos, glm::vec3 cameraDirection, float width, float height)
     {
         this->cameraPos = cameraPos;
@@ -27,24 +33,12 @@ public:
         this->height = height;
         getPerpectiveMatrix();
     }
-    void setCameraPos(glm::vec3 cameraPos)
-    {
-        this->cameraPos = cameraPos;
-    }
-
-    void setCameraDirection(glm::vec3 cameraDirection)
-    {
-        this->cameraDirection = cameraDirection;
+    void Translate(glm::vec3 displacment){
+        this->cameraPos += (displacment[2]*cameraDirection + displacment[0]*cam_right + displacment[1]*cam_up)*cameraSpeed;
     }
     glm::mat4 getViewMatrix()
     {
-        // Just use lookAt
-        return glm::lookAt(cameraPos, target_lookAt, glm::vec3(0, 1, 0));
-    }
-
-    void setRotation(glm::vec3 target)
-    {
-        this->target_lookAt = target;
+        return glm::lookAt(cameraPos, cameraPos + cameraDirection, cam_up);
     }
 
     glm::mat4 getPerpectiveMatrix()
@@ -56,8 +50,14 @@ public:
     {
         return getPerpectiveMatrix() * getViewMatrix();
     }
+    
+    void mouseMove(){
+
+    }
     void setFov(float fov)
     {
         this->FOV = fov;
     }
+
+    
 };

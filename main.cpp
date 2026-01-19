@@ -16,12 +16,34 @@ int Height = 600;
 Chunk chunk1;
 
 GLint camMatrix_pos;
+glm::vec3 cam_pos(30.0f, 0.0f, 0.0f);
+glm::vec3 cam_dir(-1, 0, 0);
+Camera cam(cam_pos, cam_dir, Width, Height);
+
+bool keys[256] = {false};
+void keyDown(unsigned char key, int x, int y)
+{
+    keys[key] = true;
+}
+void keyUp(unsigned char key, int x, int y)
+{
+    keys[key] = false;
+}
+
+float prevX = 0;
+int prevY = 0;
+
 
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
+    glm::vec3 displacenemt = glm::vec3(keys['d'] - keys['a'], 0, keys['w'] - keys['s']) * 0.1f;
+
+    cam.Translate(displacenemt);
+
     glUseProgram(program);
+    glUniformMatrix4fv(camMatrix_pos, 1, GL_FALSE, glm::value_ptr(cam.getCameraMatrix()));
 
     chunk1.draw();
 
@@ -38,10 +60,7 @@ int main(int argc, char *argv[])
     glewInit();
 
     // Camera Creation
-    glm::vec3 cam_pos(30.0f, 2.0f, 0.0f);
-    glm::vec3 cam_dir(0, 0, -5);
-    Camera cam(cam_pos, cam_dir, Width, Height);
-    cam.setRotation(glm::vec3(0,0,0));
+
     // Shader Creation
     Shader shader_1("vertex.glsl", "fragment.glsl");
     shader_1.use();
@@ -59,7 +78,9 @@ int main(int argc, char *argv[])
 
     glutDisplayFunc(display);
     glutIdleFunc(display);
-    
+    glutKeyboardFunc(keyDown);
+    glutKeyboardUpFunc(keyUp);
+    // glutPassiveMotionFunc(mouseMove);
     glutMainLoop();
     return 0;
 }
