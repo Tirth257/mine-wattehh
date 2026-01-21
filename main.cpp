@@ -17,8 +17,10 @@ Chunk chunk1;
 
 GLint camMatrix_pos;
 glm::vec3 cam_pos(30.0f, 0.0f, 0.0f);
-glm::vec3 cam_dir(-1, 0, 0);
+glm::vec3 cam_dir(0, 0, -1);
 Camera cam(cam_pos, cam_dir, Width, Height);
+
+
 
 bool keys[256] = {false};
 void keyDown(unsigned char key, int x, int y)
@@ -49,7 +51,9 @@ void display()
 
     glutSwapBuffers();
 }
-
+void mm(int x, int y){
+    cam.mouseMove(x,y);
+}
 int main(int argc, char *argv[])
 {
     glutInit(&argc, &argv[0]);
@@ -80,7 +84,7 @@ int main(int argc, char *argv[])
     glutIdleFunc(display);
     glutKeyboardFunc(keyDown);
     glutKeyboardUpFunc(keyUp);
-    // glutPassiveMotionFunc(mouseMove);
+    glutPassiveMotionFunc(mm);
     glutMainLoop();
     return 0;
 }
