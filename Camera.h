@@ -6,9 +6,8 @@
 class Camera
 {
 private:
+unsigned int VAO,VBO;
 protected:
-    glm::vec3 cameraPos;
-    glm::vec3 cameraDirection;
 
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     glm::mat4 perspectiveMatrix = glm::mat4(1.0f);
@@ -27,6 +26,9 @@ protected:
     float pitch = 0;
 
 public:
+
+    glm::vec3 cameraPos;
+    glm::vec3 cameraDirection;
     int width;
     int height;
     Camera(glm::vec3 cameraPos, glm::vec3 cameraDirection, float width, float height)
@@ -48,7 +50,7 @@ public:
 
     glm::mat4 getPerpectiveMatrix()
     {
-        this->perspectiveMatrix = glm::perspective(this->FOV, (float)this->width / this->height, 0.1f, 200.0f);
+        this->perspectiveMatrix = glm::perspective(glm::radians(this->FOV), (float)this->width / this->height, 0.1f, 400.0f);
         return this->perspectiveMatrix;
     }
     glm::mat4 getCameraMatrix()
@@ -79,11 +81,13 @@ public:
         pitch = std::clamp(pitch, -89.0f, 89.0f);
         updateCamVectors();
     }
-    void RemoveBlock(){
-        
-    }
     void setFov(float fov)
     {
         this->FOV = fov;
     }
+
+    void DrawDebugLine(){
+
+    }
+
 };

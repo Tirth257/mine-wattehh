@@ -24,7 +24,7 @@ private:
     unsigned int VAO, VBO;
     int vertexCount;
     vector<float> mesh;
-
+    vector<int> typesdata;
     bool isAir(int x, int y, int z)
     {
         if (x == -1 || y == -1 || z == -1 || x == SIZE || y == SIZE || z == SIZE)
@@ -46,6 +46,7 @@ private:
         for (int i = 0; i < 6; i++)
         {
             AddVerex(x, y, z, face_vert[face][i][0], face_vert[face][i][1], face_vert[face][i][2]);
+            typesdata.push_back(blocks[x][y][z].type);
         }
     }
 
@@ -63,14 +64,8 @@ public:
             {
                 for (int y = 0; y < SIZE; y++)
                 {
-                    if (y < SIZE / 2)
-                    {
-                        blocks[x][y][z].type = BlockType::STONE;
-                    }
-                    else
-                    {
-                        blocks[x][y][z].type = BlockType::AIR;
-                    }
+                    blocks[x][y][z].type = BlockType::STONE;
+                    blocks[x][y][z].type = BlockType::DIRT;
                 }
             }
         }
@@ -113,11 +108,55 @@ public:
 
         glBufferData(GL_ARRAY_BUFFER, mesh.size() * sizeof(float), mesh.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+
         glEnableVertexAttribArray(0);
+
+        unsigned int VBO2;
+        glGenBuffers(1, &VBO2);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(int) * typesdata.size(), typesdata.data(), GL_STATIC_DRAW);
+        glVertexAttribIPointer(1, 1, GL_INT, 0, 0);
+
+        glEnableVertexAttribArray(1);
     }
+
+    // will be called outside
     void draw()
     {
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, mesh.size() / 3); // Change Last Argument when adding U V etc..
+    }
+
+    // Chunk menuplation
+    void destroyBlock(int x, int y, int z, bool build, bool upload)
+    {
+
+        blocks[x][y][z].type = AIR;
+
+        if (build)
+        {
+            buildMesh();
+        }
+
+        if (upload)
+        {
+            uploadToGPU();
+        }
+    }
+    void destroyBlock(Block *block, bool build, bool upload)
+    {
+
+        block->type = AIR;
+
+        if (build)
+        {
+            buildMesh();
+        }
+
+        if (upload)
+        {
+            uploadToGPU();
+        }
     }
 };

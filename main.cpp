@@ -9,7 +9,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
-#include "Chunk.h"
+#include "ChunkManager.h"
+#include"Player.h"
+
 unsigned int program;
 int Width = 1000;
 int Height = 600;
@@ -20,7 +22,7 @@ glm::vec3 cam_pos(30.0f, 0.0f, 0.0f);
 glm::vec3 cam_dir(0, 0, -1);
 Camera cam(cam_pos, cam_dir, Width, Height);
 
-
+Player player("steve",&cam);
 
 bool keys[256] = {false};
 void keyDown(unsigned char key, int x, int y)
@@ -34,8 +36,23 @@ void keyUp(unsigned char key, int x, int y)
 
 float prevX = 0;
 int prevY = 0;
-
-
+void mouse_callback(int button, int state, int x, int y) {
+    
+    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            std::cout << "Left Click at: " << x << ", " << y << std::endl;
+        }
+    }
+    switch (button)
+    {
+    case GLUT_LEFT_BUTTON:
+        player.pickBlock();
+        break;
+    
+    default:
+        break;
+    }
+}
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -51,11 +68,13 @@ void display()
 
     glutSwapBuffers();
 }
-void mm(int x, int y){
-    cam.mouseMove(x,y);
+void mm(int x, int y)
+{
+    cam.mouseMove(x, y);
 }
 int main(int argc, char *argv[])
 {
+
     glutInit(&argc, &argv[0]);
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
@@ -63,7 +82,6 @@ int main(int argc, char *argv[])
     glutCreateWindow("Voxels");
     glewInit();
 
-    // Camera Creation
 
     // Shader Creation
     Shader shader_1("vertex.glsl", "fragment.glsl");
@@ -78,6 +96,10 @@ int main(int argc, char *argv[])
     chunk1.buildMesh();
     chunk1.uploadToGPU();
 
+    // TESTING
+    player.chunk1 = &chunk1;
+
+
     glEnable(GL_DEPTH_TEST);
 
     glutDisplayFunc(display);
@@ -85,6 +107,7 @@ int main(int argc, char *argv[])
     glutKeyboardFunc(keyDown);
     glutKeyboardUpFunc(keyUp);
     glutPassiveMotionFunc(mm);
+    glutMouseFunc(mouse_callback);
     glutMainLoop();
     return 0;
 }
