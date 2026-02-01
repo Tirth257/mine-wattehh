@@ -15,14 +15,15 @@
 unsigned int program;
 int Width = 1000;
 int Height = 600;
-Chunk chunk1;
+
+ChunkManager chkMang(10);
 
 GLint camMatrix_pos;
-glm::vec3 cam_pos(30.0f, 0.0f, 0.0f);
+glm::vec3 cam_pos(0.0f, 50.0f, 0.0f);
 glm::vec3 cam_dir(0, 0, -1);
 Camera cam(cam_pos, cam_dir, Width, Height);
 
-Player player("steve",&cam);
+Player player("steve",&cam,&chkMang);
 
 bool keys[256] = {false};
 void keyDown(unsigned char key, int x, int y)
@@ -41,17 +42,11 @@ void mouse_callback(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON) {
         if (state == GLUT_DOWN) {
             std::cout << "Left Click at: " << x << ", " << y << std::endl;
+        player.pickBlock();
+
         }
     }
-    switch (button)
-    {
-    case GLUT_LEFT_BUTTON:
-        player.pickBlock();
-        break;
-    
-    default:
-        break;
-    }
+
 }
 void display()
 {
@@ -64,7 +59,7 @@ void display()
     glUseProgram(program);
     glUniformMatrix4fv(camMatrix_pos, 1, GL_FALSE, glm::value_ptr(cam.getCameraMatrix()));
 
-    chunk1.draw();
+    chkMang.draw();
 
     glutSwapBuffers();
 }
@@ -92,13 +87,8 @@ int main(int argc, char *argv[])
     glUniformMatrix4fv(camMatrix_pos, 1, GL_FALSE, glm::value_ptr(cam.getCameraMatrix()));
 
     // Chunk
-    chunk1.GenerateTerrain();
-    chunk1.buildMesh();
-    chunk1.uploadToGPU();
-
+    chkMang.genMapping();
     // TESTING
-    player.chunk1 = &chunk1;
-
 
     glEnable(GL_DEPTH_TEST);
 

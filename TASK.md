@@ -5,7 +5,7 @@
 - [X] Make Camera Class
 - [X] Render A Chunk
 - [X] Camera Movement
-- [] Destroy a block
+- [X] Destroy a block
 - [] Place a block
 - [] Texture
 - [] Procedural Generation
