@@ -15,9 +15,9 @@ protected:
     glm::vec3 cam_up = glm::vec3(0, 1, 0);
     glm::vec3 cam_right = glm::vec3(1, 0, 0);
 
-    float FOV = 90;
+    float FOV = 78;
 
-    float cameraSpeed = 2;
+    float cameraSpeed = 1;
 
     float prevX = 0;
     float prevY = 0;

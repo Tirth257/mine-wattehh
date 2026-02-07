@@ -9,7 +9,7 @@ private:
     Camera *cam;
     std::string name;
     ChunkManager *chunkmanager;
-
+    BlockType hand = GRASS;
 public:
     Player(std::string name, Camera *camPointer, ChunkManager *chkmanager)
     {
@@ -18,11 +18,12 @@ public:
         this->chunkmanager = chkmanager;
     }
 
-    pair<Block *,Chunk*> rayCast(glm::vec3 position, glm::vec3 direction, float range)
+    vector<void *> rayCast(glm::vec3 position, glm::vec3 direction, float range)
     {
         float stepSize = 0.1f;
         float d = 0.0f;
         glm::vec3 current_hit = position;
+        Block *prv = nullptr;
         while (d < range)
         {
             int x = round(current_hit.x);
@@ -38,27 +39,48 @@ public:
             Chunk *cptr = this->chunkmanager->chunks[{cx, cz}];
             if (cptr->blocks[localX][y][localZ].type != AIR)
             {
-                cptr->blocks[localX][y][localZ].type = AIR;
-                cptr->buildMesh();
-                cptr->uploadToGPU();
-                return {&(cptr->blocks[localX][y][localZ]),cptr};
+                return {&(cptr->blocks[localX][y][localZ]), prv, cptr};
             }
+            prv = &cptr->blocks[localX][y][localZ];
             current_hit += direction * stepSize;
             d += stepSize;
         }
-        return {nullptr,nullptr};
+        return {nullptr, nullptr, nullptr};
     }
     void pickBlock()
     {
 
-        pair<Block *,Chunk*> ret = rayCast(cam->cameraPos, cam->cameraDirection, 100);
-
-        if (ret.first != nullptr)
+        vector<void *> ret = rayCast(cam->cameraPos, cam->cameraDirection, 100);
+        Block *b = (Block *)ret[0];
+        Chunk *h_chunk = (Chunk *)ret[2];
+        if (ret[0] != nullptr)
         {
+            b->type = AIR;
+            h_chunk->buildMesh();
+            h_chunk->uploadToGPU();
             cout << "Destroyed Block" << endl;
 
-            
             // chunk1->destroyBlock(rc,true,true);
+        }
+        else
+        {
+            cout << "Raycast missed" << endl;
+        }
+    }
+    void PlaceBlock()
+    {
+
+        vector<void *> ret = rayCast(cam->cameraPos, cam->cameraDirection, 100);
+
+        Block *b = (Block *)ret[1];
+        Chunk *h_chunk = (Chunk *)ret[2];
+        if (ret[1] != nullptr)
+        {
+            b->type = hand;
+            h_chunk->buildMesh();
+            h_chunk->uploadToGPU();
+            cout << "Placed Block" << endl;
+
         }
         else
         {

@@ -10,7 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
 #include "ChunkManager.h"
-#include"Player.h"
+#include "Player.h"
 
 unsigned int program;
 int Width = 1000;
@@ -23,7 +23,7 @@ glm::vec3 cam_pos(0.0f, 50.0f, 0.0f);
 glm::vec3 cam_dir(0, 0, -1);
 Camera cam(cam_pos, cam_dir, Width, Height);
 
-Player player("steve",&cam,&chkMang);
+Player player("steve", &cam, &chkMang);
 
 bool keys[256] = {false};
 void keyDown(unsigned char key, int x, int y)
@@ -37,16 +37,29 @@ void keyUp(unsigned char key, int x, int y)
 
 float prevX = 0;
 int prevY = 0;
-void mouse_callback(int button, int state, int x, int y) {
-    
-    if (button == GLUT_LEFT_BUTTON) {
-        if (state == GLUT_DOWN) {
+void mouse_callback(int button, int state, int x, int y)
+{
+
+    if (button == GLUT_LEFT_BUTTON)
+    {
+        if (state == GLUT_DOWN)
+        {
             std::cout << "Left Click at: " << x << ", " << y << std::endl;
-        player.pickBlock();
-
+            player.pickBlock();
         }
+        
     }
-
+    if (button == GLUT_RIGHT_BUTTON)
+    {
+        if (state == GLUT_DOWN)
+        {
+            
+            std::cout << "Right Click at: " << x << ", " << y << std::endl;
+            player.PlaceBlock();
+        }
+        
+    }
+    
 }
 void display()
 {
@@ -76,7 +89,6 @@ int main(int argc, char *argv[])
     glutInitWindowSize(Width, Height);
     glutCreateWindow("Voxels");
     glewInit();
-
 
     // Shader Creation
     Shader shader_1("vertex.glsl", "fragment.glsl");

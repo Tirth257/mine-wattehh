@@ -121,13 +121,6 @@ public:
     void uploadToGPU()
     {
 
-        for (auto &&i : typesdata)
-        {
-            if (i == DIRT)
-            {
-                cout << " Dirt spoteed at " << endl;
-            }
-        }
 
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
