@@ -9,23 +9,22 @@ private:
 unsigned int VAO,VBO;
 protected:
 
-    glm::mat4 viewMatrix = glm::mat4(1.0f);
-    glm::mat4 perspectiveMatrix = glm::mat4(1.0f);
-
     glm::vec3 cam_up = glm::vec3(0, 1, 0);
     glm::vec3 cam_right = glm::vec3(1, 0, 0);
 
     float FOV = 78;
 
-    float cameraSpeed = 1;
 
     float prevX = 0;
     float prevY = 0;
-    float mouse_Sensivity = 0.3f;
     float yaw = -90;
     float pitch = 0;
 
 public:
+    glm::mat4 viewMatrix = glm::mat4(1.0f);
+    glm::mat4 perspectiveMatrix = glm::mat4(1.0f);
+    float movementSpeed = 1;
+    float mouse_Sensivity = 0.3f;
 
     glm::vec3 cameraPos;
     glm::vec3 cameraDirection;
@@ -37,26 +36,24 @@ public:
         this->cameraDirection = cameraDirection / glm::length(cameraDirection);
         this->width = width;
         this->height = height;
-        getPerpectiveMatrix();
+        GenPerpectiveMatrix();
     }
     void Translate(glm::vec3 displacment)
     {
-        this->cameraPos += (displacment[2] * cameraDirection + displacment[0] * cam_right + displacment[1] * cam_up) * cameraSpeed;
+        this->cameraPos += (displacment[2] * cameraDirection + displacment[0] * cam_right + displacment[1] * cam_up) * movementSpeed;
     }
-    glm::mat4 getViewMatrix()
+    void GenViewMatrix()
     {
-        return glm::lookAt(cameraPos, cameraPos + cameraDirection, cam_up);
+        this->viewMatrix = glm::lookAt(cameraPos, cameraPos + cameraDirection, cam_up);
+     
     }
 
-    glm::mat4 getPerpectiveMatrix()
+    void GenPerpectiveMatrix()
     {
         this->perspectiveMatrix = glm::perspective(glm::radians(this->FOV), (float)this->width / this->height, 0.1f, 400.0f);
-        return this->perspectiveMatrix;
+     
     }
-    glm::mat4 getCameraMatrix()
-    {
-        return getPerpectiveMatrix() * getViewMatrix();
-    }
+    
     void updateCamVectors()
     {
         glm::vec3 direction;

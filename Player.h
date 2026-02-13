@@ -10,12 +10,18 @@ private:
     std::string name;
     ChunkManager *chunkmanager;
     BlockType hand = GRASS;
+    
+    float movementSpeed = 3;
+    float mouse_Sensivity = 1.0f;
 public:
+
     Player(std::string name, Camera *camPointer, ChunkManager *chkmanager)
     {
         this->name = name;
         cam = camPointer;
         this->chunkmanager = chkmanager;
+        cam->movementSpeed = this->movementSpeed;
+        cam->mouse_Sensivity = this->mouse_Sensivity;
     }
 
     vector<void *> rayCast(glm::vec3 position, glm::vec3 direction, float range)
