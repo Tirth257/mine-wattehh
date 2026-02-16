@@ -3,33 +3,39 @@
 #include "Block.h"
 #include "ChunkManager.h"
 #include "CONSTANTS.h"
+#include "Water.h"
+#include "WaterManager.h"
+#include "CoreS.h"
 class Player
 {
 private:
     Camera *cam;
     std::string name;
     ChunkManager *chunkmanager;
-    BlockType hand = GRASS;
-    
+    WaterManager *water_manager;
+    BlockType hand = WATER;
     float movementSpeed = 3;
     float mouse_Sensivity = 1.0f;
-public:
 
-    Player(std::string name, Camera *camPointer, ChunkManager *chkmanager)
+public:
+    Water *myWater;
+    Player(std::string name, Camera *camPointer, ChunkManager *chkmanager, WaterManager *water_manager)
     {
         this->name = name;
         cam = camPointer;
         this->chunkmanager = chkmanager;
         cam->movementSpeed = this->movementSpeed;
         cam->mouse_Sensivity = this->mouse_Sensivity;
+        this->water_manager = water_manager;
     }
 
-    vector<void *> rayCast(glm::vec3 position, glm::vec3 direction, float range)
+    // TODO: change return type to an organized Struct
+    rayHit rayCast(glm::vec3 position, glm::vec3 direction, float range)
     {
+        rayHit hitData;
         float stepSize = 0.1f;
         float d = 0.0f;
         glm::vec3 current_hit = position;
-        Block *prv = nullptr;
         while (d < range)
         {
             int x = round(current_hit.x);
@@ -45,52 +51,52 @@ public:
             Chunk *cptr = this->chunkmanager->chunks[{cx, cz}];
             if (cptr->blocks[localX][y][localZ].type != AIR)
             {
-                return {&(cptr->blocks[localX][y][localZ]), prv, cptr};
+                hitData.distance = d;
+                hitData.hit = true;
+
+                hitData.hitPostion = glm::vec3(x, y, z);
+
+                hitData.hitChunk = cptr;
+                hitData.hitBlock = &cptr->blocks[localX][y][localZ];
+                return hitData;
             }
-            prv = &cptr->blocks[localX][y][localZ];
+            hitData.prvhitPostion = glm::vec3(x, y, z);
+
+            hitData.prevChunk = cptr;
+            hitData.prevBlock = &cptr->blocks[localX][y][localZ];
+
             current_hit += direction * stepSize;
             d += stepSize;
         }
-        return {nullptr, nullptr, nullptr};
+        return hitData;
     }
     void pickBlock()
     {
-
-        vector<void *> ret = rayCast(cam->cameraPos, cam->cameraDirection, 100);
-        Block *b = (Block *)ret[0];
-        Chunk *h_chunk = (Chunk *)ret[2];
-        if (ret[0] != nullptr)
+        rayHit retreted = rayCast(cam->cameraPos, cam->cameraDirection, 100);
+        if (retreted.hit)
         {
-            b->type = AIR;
-            h_chunk->buildMesh();
-            h_chunk->uploadToGPU();
-            cout << "Destroyed Block" << endl;
-
-            // chunk1->destroyBlock(rc,true,true);
-        }
-        else
-        {
-            cout << "Raycast missed" << endl;
+            retreted.hitBlock->type = AIR;
+            retreted.hitChunk->buildMesh();
+            retreted.hitChunk->uploadToGPU();
         }
     }
     void PlaceBlock()
     {
 
-        vector<void *> ret = rayCast(cam->cameraPos, cam->cameraDirection, 100);
+        rayHit retreted = rayCast(cam->cameraPos, cam->cameraDirection, 100);
 
-        Block *b = (Block *)ret[1];
-        Chunk *h_chunk = (Chunk *)ret[2];
-        if (ret[1] != nullptr)
+        if (retreted.hit)
         {
-            b->type = hand;
-            h_chunk->buildMesh();
-            h_chunk->uploadToGPU();
-            cout << "Placed Block" << endl;
+            if (hand == WATER)
+            {
 
-        }
-        else
-        {
-            cout << "Raycast missed" << endl;
+                myWater = new Water(retreted.prevBlock, retreted.prvhitPostion);
+                water_manager->addWaterSource(myWater);
+            }
+                retreted.prevBlock->type = hand;
+
+            retreted.prevChunk->buildMesh();
+            retreted.prevChunk->uploadToGPU();
         }
     }
 };

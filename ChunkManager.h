@@ -18,10 +18,11 @@ private:
 
 public:
     std::unordered_map<pair<int, int>, Chunk *, PairHash> chunks;
+    std::unordered_set<Chunk*> updatedChunks_indx;
 
     ChunkManager(int squareSize)
     {
-        this->squareSize=squareSize;
+        this->squareSize = squareSize;
     }
     void genMapping()
     {
@@ -29,7 +30,7 @@ public:
         {
             for (int j = -squareSize / 2; j < squareSize / 2; j++)
             {
-                Chunk *tempChunk = new Chunk({i,j});
+                Chunk *tempChunk = new Chunk({i, j});
                 tempChunk->GenerateTerrain();
                 tempChunk->buildMesh();
                 tempChunk->uploadToGPU();
@@ -47,6 +48,47 @@ public:
                 chunks[{i, j}]->draw();
             }
         }
+    }
+
+    void updateBatchChunk(){
+        for (auto &&i : updatedChunks_indx)
+        {
+            i->buildMesh();
+            i->uploadToGPU();
+            
+        }
+        updatedChunks_indx.clear();
+        
+        
+    }
+    Block *getBlockAtPos(glm::vec3 pos)
+    {
+        int x = round(pos[0]);
+        int y = round(pos[1]);
+        int z = round(pos[2]);
+
+        int cx = floor((float)x / chunkSize);
+        int cz = floor((float)z / chunkSize);
+
+        int localX = mod(x, chunkSize);
+        int localZ = mod(z, chunkSize);
+
+        Chunk *cptr = this->chunks[{cx, cz}];
+            return &cptr->blocks[localX][y][localZ];
+        
+        //return nullptr;
+    }
+    Chunk* getChunkAtPos(glm::vec3 pos){
+        int cx = floor((float)pos.x / chunkSize);
+        int cz = floor((float)pos.z / chunkSize);
+
+
+        return this->chunks[{cx, cz}];
+    }
+    void AddChunkUpdateQuaue(glm::vec3 pos){
+        
+        updatedChunks_indx.insert(getChunkAtPos(pos));
+
     }
     ~ChunkManager() = default;
 };

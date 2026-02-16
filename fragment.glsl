@@ -7,11 +7,12 @@ flat in int blockType;
 in vec3 OutNormal;
 in vec3 fragPos;
 //in vec3 camPos;
-vec3 blockColors[4] = vec3[4](
+vec3 blockColors[5] = vec3[5](
     vec3(0.0), 
     vec3(0.2, 0.8, 0.2), 
     vec3(0.55, 0.27, 0.07), 
-    vec3(0.5, 0.5, 0.5)
+    vec3(0.5, 0.5, 0.5),
+    vec3(0,0,1)
 );
 
 out vec4 FragColor;

@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "CONSTANTS.h"
+#include "back/Noises.h"
 using namespace std;
 static const float face_vert[6][6][3] = {
     // +X (right)
@@ -26,6 +27,7 @@ private:
     int vertexCount;
     vector<float> mesh;
     vector<int> typesdata;
+    vector<float> water_mesh;
     bool isAir(int x, int y, int z)
     {
         if (x == -1 || y == -1 || z == -1 || x == chunkSize || y == chunkHeight || z == chunkSize)
@@ -73,16 +75,22 @@ public:
     // Generated Terrain
     void GenerateTerrain()
     {
+        vector<vector<color>> HeightMap = HeightMap::GenPerlineNoice(5,chunkSize,chunkSize);
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
                 for (int y = 0; y < chunkHeight; y++)
                 {
-                    if (y < 2)
+                    if (y < HeightMap[x][z][0]*chunkHeight)
                     {
-                        blocks[x][y][z].type = BlockType::STONE;
+                        blocks[x][y][z].type = DIRT;
                     }
+                    else if (y < HeightMap[x][z][0]*chunkHeight/5)
+                    {
+                        blocks[x][y][z].type = GRASS;
+                    }
+                    
                     else
                     {
                         blocks[x][y][z].type = AIR;
@@ -104,7 +112,18 @@ public:
                     if (isAir(x, y, z))
                     {
                         continue;
-                    }
+                    }/*
+                    if (blocks[x][y][z].type == WATER)
+                    {
+                        // currently do it here , but leter change it
+                        for (int i = 0; i < 6; i++)
+                        {
+                            AddVertex(x, y, z, face_vert[i][0][0], face_vert[i][0][1], face_vert[i][0][2]);
+                            typesdata.push_back(blocks[x][y][z].type);
+                        }
+                        continue;
+                    }*/
+                    
                     if (isAir(x + 1, y, z)) 
                         AddFace(0, x, y, z); // +X
                     if (isAir(x - 1, y, z))
@@ -122,8 +141,7 @@ public:
         }
     }
     void uploadToGPU()
-    {
-
+    {   
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
@@ -139,14 +157,19 @@ public:
         glVertexAttribIPointer(2,1,GL_INT,2*sizeof(int),(void*)(sizeof(int)));
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
+
+        glBindVertexArray(0);
+
+
     }
 
-    // will be called outside
-    void draw()
+    void draw() // is called in ChunkManager Only 
     {
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, mesh.size() / 3); // Change Last Argument when adding U V etc..
         glBindVertexArray(0);
+
+
     }
 
     // Chunk menuplation
