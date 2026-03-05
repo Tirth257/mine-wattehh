@@ -14,7 +14,7 @@ protected:
 
     float FOV = 78;
 
-
+    float farClip = 1000.0f;
     float prevX = 0;
     float prevY = 0;
     float yaw = -90;
@@ -50,7 +50,7 @@ public:
 
     void GenPerpectiveMatrix()
     {
-        this->perspectiveMatrix = glm::perspective(glm::radians(this->FOV), (float)this->width / this->height, 0.1f, 400.0f);
+        this->perspectiveMatrix = glm::perspective(glm::radians(this->FOV), (float)this->width / this->height, 0.1f, farClip);
      
     }
     

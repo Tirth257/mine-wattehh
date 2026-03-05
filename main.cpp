@@ -13,6 +13,7 @@
 #include "WaterManager.h"
 
 unsigned int program;
+unsigned int water_program;
 int Width = 1000;
 int Height = 600;
 
@@ -22,6 +23,11 @@ WaterManager *water_manager;
 GLint camMatrix_pos;
 GLint perspective_matrix_pos;
 GLint camPos_uniformLocation;
+
+GLint camMatrix_pos_water;
+GLint perspective_matrix_pos_water;
+GLint camPos_uniformLocation_water;
+
 glm::vec3 cam_pos(0.0f, 50.0f, 0.0f);
 glm::vec3 cam_dir(0, 0, -1);
 Camera cam(cam_pos, cam_dir, Width, Height);
@@ -77,14 +83,30 @@ void display()
 
     cam.Translate(displacenemt);
 
-    glUseProgram(program);
-    // Updates Uniforms
+    
     cam.GenPerpectiveMatrix();
     cam.GenViewMatrix();
+
+    // Updates Uniforms
+    glUseProgram(program);
+
     glUniformMatrix4fv(camMatrix_pos, 1, GL_FALSE, glm::value_ptr(cam.viewMatrix));
     glUniformMatrix4fv(perspective_matrix_pos, 1, GL_FALSE, glm::value_ptr(cam.perspectiveMatrix));
-
     glUniform3fv(camPos_uniformLocation, 1, glm::value_ptr(cam.cameraPos));
+
+    
+    // Updates Uniforms for water shader
+    float timeValue = glutGet(GLUT_ELAPSED_TIME) / 1000.0f; 
+
+    // 2. Send it to the water shader
+    glUseProgram(water_program);
+   // GLint timeLoc = glGetUniformLocation(water_program, "time");
+    //glUniform1f(timeLoc, timeValue);
+    
+    glUniformMatrix4fv(camMatrix_pos_water, 1, GL_FALSE, glm::value_ptr(cam.viewMatrix));
+    glUniformMatrix4fv(perspective_matrix_pos_water, 1, GL_FALSE, glm::value_ptr(cam.perspectiveMatrix));
+    glUniform3fv(camPos_uniformLocation_water, 1, glm::value_ptr(cam.cameraPos));
+
     // drawing
     chunk_manager->draw();
 
@@ -103,6 +125,8 @@ void display()
             water_manager->updateAllWaters();
         }
     }
+    
+    chunk_manager->updateMapping();
     if (minDiffWent < targetFrameDuration)
     {
         this_thread::sleep_for(targetFrameDuration - minDiffWent);
@@ -115,6 +139,7 @@ void display()
 
     glutSetWindowTitle(title);
 }
+
 void mm(int x, int y)
 {
     cam.mouseMove(x, y);
@@ -130,10 +155,16 @@ int main(int argc, char *argv[])
     glewInit();
 
     // var cre
+    heightNoise = new FastNoiseLite();
+    heightNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
-    chunk_manager = new ChunkManager(5);
+
+    chunk_manager = new ChunkManager(&program,&water_program);
     water_manager = new WaterManager(chunk_manager);
     player = new Player("Steve", &cam, chunk_manager, water_manager);
+    
+    
+
 
     // Shader Creation
     Shader shader_1("vertex.glsl", "fragment.glsl");
@@ -142,6 +173,7 @@ int main(int argc, char *argv[])
 
     camMatrix_pos = glGetUniformLocation(program, "view");
     perspective_matrix_pos = glGetUniformLocation(program, "perspective");
+    camPos_uniformLocation = glGetUniformLocation(program, "cam_pos");
 
     // setup lighting uniform
 
@@ -150,7 +182,25 @@ int main(int argc, char *argv[])
     GLint lightPos_uniformLocation = glGetUniformLocation(program, "light_pos");
     glUniform3fv(lightPos_uniformLocation, 1, lightPos);
     
-    camPos_uniformLocation = glGetUniformLocation(program, "cam_pos");
+
+
+    // setup water Shader
+    Shader waterShader("WaterVertex.glsl", "WaterFrag.glsl");
+    waterShader.use();
+    water_program = waterShader.ID;
+
+    camMatrix_pos_water = glGetUniformLocation(water_program, "view");
+    perspective_matrix_pos_water = glGetUniformLocation(water_program, "perspective");
+    camPos_uniformLocation_water = glGetUniformLocation(water_program, "cam_pos");
+
+    // setup lighting uniform
+
+    GLint lightColor_uniformLocation_water = glGetUniformLocation(water_program, "lightColor");
+    glUniform3fv(lightColor_uniformLocation_water, 1, lightColor);
+    GLint lightPos_uniformLocation_water = glGetUniformLocation(water_program, "light_pos");
+    glUniform3fv(lightPos_uniformLocation_water, 1, lightPos);
+
+
     // Chunk
     chunk_manager->genMapping();
 
@@ -162,6 +212,9 @@ int main(int argc, char *argv[])
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FRAMEBUFFER_SRGB);
     glEnable(GL_CULL_FACE);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glutDisplayFunc(display);
     glutIdleFunc(display);

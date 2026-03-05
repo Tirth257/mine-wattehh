@@ -14,7 +14,7 @@ private:
     ChunkManager *chunkmanager;
     WaterManager *water_manager;
     BlockType hand = WATER;
-    float movementSpeed = 3;
+    float movementSpeed = 10;
     float mouse_Sensivity = 1.0f;
 
 public:
@@ -27,6 +27,7 @@ public:
         cam->movementSpeed = this->movementSpeed;
         cam->mouse_Sensivity = this->mouse_Sensivity;
         this->water_manager = water_manager;
+        chkmanager->setReferenceCamera(cam);
     }
 
     // TODO: change return type to an organized Struct

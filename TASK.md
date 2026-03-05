@@ -7,7 +7,7 @@
 - [X] Camera Movement
 - [X] Destroy a block
 - [X] Place a block
-- [] Basic Procedural Generation
+- [X] Basic Procedural Generation
 - [X] Add FPS limit
 
 ## Phase 2: Graphical Improvement
@@ -22,3 +22,8 @@
 ## Phase 4: Physics
 - [] Add Gravity
 - [] Collition Detection
+
+## OPTIMIZATION
+- [] improved VAO (pass only face and type . use lookup table in glsl) // decrease memory usage by 9x
+- [] do early depth testing along with better chunk sequance rendering
+- [] convert data types to smaller types if possible
