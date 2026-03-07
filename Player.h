@@ -3,7 +3,6 @@
 #include "Block.h"
 #include "ChunkManager.h"
 #include "CONSTANTS.h"
-#include "Water.h"
 #include "WaterManager.h"
 #include "CoreS.h"
 class Player
@@ -18,7 +17,6 @@ private:
     float mouse_Sensivity = 1.0f;
 
 public:
-    Water *myWater;
     Player(std::string name, Camera *camPointer, ChunkManager *chkmanager, WaterManager *water_manager)
     {
         this->name = name;
@@ -76,9 +74,10 @@ public:
         rayHit retreted = rayCast(cam->cameraPos, cam->cameraDirection, 100);
         if (retreted.hit)
         {
-            retreted.hitBlock->type = AIR;
-            retreted.hitChunk->buildMesh();
-            retreted.hitChunk->uploadToGPU();
+            chunkmanager->DestroyBlock(&retreted);
+            water_manager->changeAround(retreted.hitPostion);
+            chunkmanager->updateBatchChunk();
+
         }
     }
     void PlaceBlock()
@@ -90,12 +89,12 @@ public:
         {
             if (hand == WATER)
             {
-
-                myWater = new Water(retreted.prevBlock, retreted.prvhitPostion);
-                water_manager->addWaterSource(myWater);
+                water_manager->addWater(retreted);
             }
-                retreted.prevBlock->type = hand;
+            retreted.prevBlock->type = hand;
 
+
+            // TODO: try doing this in a sequencial manner . (may be used to fix fluctialtion)
             retreted.prevChunk->buildMesh();
             retreted.prevChunk->uploadToGPU();
         }

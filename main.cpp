@@ -9,7 +9,6 @@
 #include "ChunkManager.h"
 #include "Player.h"
 #include "TickServer.h"
-#include "Water.h"
 #include "WaterManager.h"
 
 unsigned int program;
@@ -52,7 +51,6 @@ void mouse_callback(int button, int state, int x, int y)
     {
         if (state == GLUT_DOWN)
         {
-            std::cout << "Left Click at: " << x << ", " << y << std::endl;
             player->pickBlock();
         }
     }
@@ -61,7 +59,6 @@ void mouse_callback(int button, int state, int x, int y)
         if (state == GLUT_DOWN)
         {
 
-            std::cout << "Right Click at: " << x << ", " << y << std::endl;
             player->PlaceBlock();
         }
     }
@@ -83,7 +80,6 @@ void display()
 
     cam.Translate(displacenemt);
 
-    
     cam.GenPerpectiveMatrix();
     cam.GenViewMatrix();
 
@@ -94,15 +90,14 @@ void display()
     glUniformMatrix4fv(perspective_matrix_pos, 1, GL_FALSE, glm::value_ptr(cam.perspectiveMatrix));
     glUniform3fv(camPos_uniformLocation, 1, glm::value_ptr(cam.cameraPos));
 
-    
     // Updates Uniforms for water shader
-    float timeValue = glutGet(GLUT_ELAPSED_TIME) / 1000.0f; 
+    float timeValue = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 
     // 2. Send it to the water shader
     glUseProgram(water_program);
-   // GLint timeLoc = glGetUniformLocation(water_program, "time");
-    //glUniform1f(timeLoc, timeValue);
-    
+    // GLint timeLoc = glGetUniformLocation(water_program, "time");
+    // glUniform1f(timeLoc, timeValue);
+
     glUniformMatrix4fv(camMatrix_pos_water, 1, GL_FALSE, glm::value_ptr(cam.viewMatrix));
     glUniformMatrix4fv(perspective_matrix_pos_water, 1, GL_FALSE, glm::value_ptr(cam.perspectiveMatrix));
     glUniform3fv(camPos_uniformLocation_water, 1, glm::value_ptr(cam.cameraPos));
@@ -119,13 +114,11 @@ void display()
 
     // Update Servers
     // waterServer.tickMe(minDiffWent);
-    if (player->myWater != nullptr)
+    if (waterServer.tickMe(minDiffWent))
     {
-        if(waterServer.tickMe(minDiffWent)){
-            water_manager->updateAllWaters();
-        }
+        water_manager->updateAllWaters();
     }
-    
+
     chunk_manager->updateMapping();
     if (minDiffWent < targetFrameDuration)
     {
@@ -158,14 +151,10 @@ int main(int argc, char *argv[])
     heightNoise = new FastNoiseLite();
     heightNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
-
-    chunk_manager = new ChunkManager(&program,&water_program);
+    chunk_manager = new ChunkManager(&program, &water_program);
     water_manager = new WaterManager(chunk_manager);
     player = new Player("Steve", &cam, chunk_manager, water_manager);
     
-    
-
-
     // Shader Creation
     Shader shader_1("vertex.glsl", "fragment.glsl");
     shader_1.use();
@@ -181,8 +170,6 @@ int main(int argc, char *argv[])
     glUniform3fv(lightColor_uniformLocation, 1, lightColor);
     GLint lightPos_uniformLocation = glGetUniformLocation(program, "light_pos");
     glUniform3fv(lightPos_uniformLocation, 1, lightPos);
-    
-
 
     // setup water Shader
     Shader waterShader("WaterVertex.glsl", "WaterFrag.glsl");
@@ -200,12 +187,10 @@ int main(int argc, char *argv[])
     GLint lightPos_uniformLocation_water = glGetUniformLocation(water_program, "light_pos");
     glUniform3fv(lightPos_uniformLocation_water, 1, lightPos);
 
-
     // Chunk
     chunk_manager->genMapping();
 
     // WATER
-    waterServer.wt = player->myWater;
 
     // TESTING
 

@@ -7,7 +7,6 @@ private:
     chrono::duration<double> prevTime;
     chrono::duration<double> limit;
     public:
-    Water *wt;
 
     // tick time should be in seconds
     TickServer(double limit){
@@ -31,7 +30,7 @@ private:
         
     }
     void Action(){
-        wt->Expend();
+       // wt->Expend();
     }
 };
  

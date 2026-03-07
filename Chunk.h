@@ -4,7 +4,6 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "CONSTANTS.h"
-#include "back/Noises.h"
 using namespace std;
 static const float face_vert[6][6][3] = {
     // +X (right)
@@ -135,6 +134,7 @@ public:
 
         water_mesh.clear();
         water_typesdata.clear();
+
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
@@ -148,18 +148,18 @@ public:
                     }
                     if (block_type == WATER)
                     {
-                        if (isAir(x + 1, y, z)) 
-                        AddFace(0, x, y, z); // +X
-                    if (isAir(x - 1, y, z))
-                        AddFace(1, x, y, z); // -X
-                    if (isAir(x, y + 1, z))
-                        AddFace(2, x, y, z); // +Y
-                    if (isAir(x, y - 1, z))
-                        AddFace(3, x, y, z); // -Y
-                    if (isAir(x, y, z + 1))
-                        AddFace(4, x, y, z); // +Z
-                    if (isAir(x, y, z - 1))
-                        AddFace(5, x, y, z); // -Z
+                        if (isAir(x + 1, y, z))
+                            AddFace(0, x, y, z); // +X
+                        if (isAir(x - 1, y, z))
+                            AddFace(1, x, y, z); // -X
+                        if (isAir(x, y + 1, z))
+                            AddFace(2, x, y, z); // +Y
+                        if (isAir(x, y - 1, z))
+                            AddFace(3, x, y, z); // -Y
+                        if (isAir(x, y, z + 1))
+                            AddFace(4, x, y, z); // +Z
+                        if (isAir(x, y, z - 1))
+                            AddFace(5, x, y, z); // -Z
                     }
                     else
                     {
@@ -179,6 +179,45 @@ public:
                     }
                 }
             }
+        }
+    }
+    void AppendBlock(int x, int y, int z)
+    {
+        BlockType block_type = blocks[x][y][z].type;
+        if (block_type == AIR)
+        {
+            return;
+        }
+        if (block_type == WATER)
+        {
+            if (isAir(x + 1, y, z))
+                AddFace(0, x, y, z); // +X
+            if (isAir(x - 1, y, z))
+                AddFace(1, x, y, z); // -X
+            if (isAir(x, y + 1, z))
+                AddFace(2, x, y, z); // +Y
+            if (isAir(x, y - 1, z))
+                AddFace(3, x, y, z); // -Y
+            if (isAir(x, y, z + 1))
+                AddFace(4, x, y, z); // +Z
+            if (isAir(x, y, z - 1))
+                AddFace(5, x, y, z); // -Z
+        }
+        else
+        {
+
+            if (isAir(x + 1, y, z) || isWater(x + 1, y, z))
+                AddFace(0, x, y, z); // +X
+            if (isAir(x - 1, y, z) || isWater(x - 1, y, z))
+                AddFace(1, x, y, z); // -X
+            if (isAir(x, y + 1, z) || isWater(x, y + 1, z))
+                AddFace(2, x, y, z); // +Y
+            if (isAir(x, y - 1, z) || isWater(x, y - 1, z))
+                AddFace(3, x, y, z); // -Y
+            if (isAir(x, y, z + 1) || isWater(x, y, z + 1))
+                AddFace(4, x, y, z); // +Z
+            if (isAir(x, y, z - 1) || isWater(x, y, z - 1))
+                AddFace(5, x, y, z); // -Z
         }
     }
     void uploadToGPU()

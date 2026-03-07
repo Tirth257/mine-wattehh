@@ -1,6 +1,7 @@
 #pragma once
 #include "Chunk.h"
 #include "CONSTANTS.h"
+#include "CoreS.h"
 class ChunkManager
 {
 private:
@@ -12,15 +13,6 @@ private:
     {
         return abs(coord.first - cam->cameraPos.x) + abs(coord.second - cam->cameraPos.z);
     }
-    struct PairHash
-    {
-        size_t operator()(const std::pair<int, int> &p) const noexcept
-        {
-            size_t h1 = std::hash<int>{}(p.first);
-            size_t h2 = std::hash<int>{}(p.second);
-            return h1 ^ (h2 << 1);
-        }
-    };
     Camera *cam;
     unsigned int *program;
     unsigned int *water_program;
@@ -28,16 +20,19 @@ private:
     FastNoiseLite heightMap;
 
 public:
+
     std::unordered_map<pair<int, int>, Chunk *, PairHash> chunks;
-    std::unordered_set<Chunk *> updatedChunks_indx;
+    std::unordered_set<Chunk *> updatedChunksPointers;
+    std::unordered_set<Chunk *> appendedChunksPointers;
 
     std::unordered_map<pair<int, int>, Chunk *, PairHash> to_draw_chunk;
 
-    ChunkManager( unsigned int *program, unsigned int *water_program)
+    ChunkManager(unsigned int *program, unsigned int *water_program)
     {
         this->program = program;
         this->water_program = water_program;
     }
+
     void genMapping()
     {
         int x = 0;
@@ -47,26 +42,25 @@ public:
             for (int j = -renderDistance / 2 + abs(i); j <= renderDistance / 2 - abs(i); j++)
             {
 
-                
                 if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
                 {
-                    to_draw_chunk[{i+x, j+z}] = chunks[{i+x, j+z}];
+                    to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
                 }
                 else
                 {
 
-                    Chunk *tempChunk = new Chunk({i+x, j+z});
+                    Chunk *tempChunk = new Chunk({i + x, j + z});
                     tempChunk->GenerateTerrain();
                     tempChunk->buildMesh();
                     tempChunk->uploadToGPU();
-                    chunks[{i+x, j+z}] = tempChunk;
-                    to_draw_chunk[{i+x, j+z}] = tempChunk;
+                    chunks[{i + x, j + z}] = tempChunk;
+                    to_draw_chunk[{i + x, j + z}] = tempChunk;
                 }
             }
         }
     }
 
-    void updateMapping2() // TODO: Finish this efficient algorith
+    void updateMapping2() // TODO: Finish this efficient algorithm
     {
         // remove far chunks
         for (auto &&chk : to_draw_chunk)
@@ -84,57 +78,56 @@ public:
     void updateMapping()
     {
         to_draw_chunk.clear();
-        
+
         // add closer chunks
         pair<int, int> chunk_coordinate = getChunkAtPos(cam->cameraPos)->chunk_coordinates;
         int x = chunk_coordinate.first;
         int z = chunk_coordinate.second;
 
-/*
-        for (int i = x-renderDistance; i <= x + renderDistance; i++)
-        {
-            for (int j = z-renderDistance+abs(i-renderDistance); j <= z+renderDistance-abs(i-renderDistance); j++)
-            {
-               if (chunks.find({i, j}) != chunks.end()) // already generated
+        /*
+                for (int i = x-renderDistance; i <= x + renderDistance; i++)
                 {
-                    to_draw_chunk[{i, j}] = chunks[{i, j}];
-                }
-                else
-                {
+                    for (int j = z-renderDistance+abs(i-renderDistance); j <= z+renderDistance-abs(i-renderDistance); j++)
+                    {
+                       if (chunks.find({i, j}) != chunks.end()) // already generated
+                        {
+                            to_draw_chunk[{i, j}] = chunks[{i, j}];
+                        }
+                        else
+                        {
 
-                    Chunk *tempChunk = new Chunk({i, j});
-                    tempChunk->GenerateTerrain();
-                    tempChunk->buildMesh();
-                    tempChunk->uploadToGPU();
-                    chunks[{i, j}] = tempChunk;
-                    to_draw_chunk[{i, j}] = tempChunk;
-                    cout << " creating a lot "<< endl  ;
-                }  
-            }
-            
-        }
-        
-*/
+                            Chunk *tempChunk = new Chunk({i, j});
+                            tempChunk->GenerateTerrain();
+                            tempChunk->buildMesh();
+                            tempChunk->uploadToGPU();
+                            chunks[{i, j}] = tempChunk;
+                            to_draw_chunk[{i, j}] = tempChunk;
+                            cout << " creating a lot "<< endl  ;
+                        }
+                    }
+
+                }
+
+        */
 
         for (int i = -renderDistance / 2; i <= renderDistance / 2; i++)
         {
             for (int j = -renderDistance / 2 + abs(i); j <= renderDistance / 2 - abs(i); j++)
             {
 
-                
                 if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
                 {
-                    to_draw_chunk[{i+x, j+z}] = chunks[{i+x, j+z}];
+                    to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
                 }
                 else
                 {
 
-                    Chunk *tempChunk = new Chunk({i+x, j+z});
+                    Chunk *tempChunk = new Chunk({i + x, j + z});
                     tempChunk->GenerateTerrain();
                     tempChunk->buildMesh();
                     tempChunk->uploadToGPU();
-                    chunks[{i+x, j+z}] = tempChunk;
-                    to_draw_chunk[{i+x, j+z}] = tempChunk;
+                    chunks[{i + x, j + z}] = tempChunk;
+                    to_draw_chunk[{i + x, j + z}] = tempChunk;
                 }
             }
         }
@@ -147,18 +140,26 @@ public:
         {
             i.second->draw(program, water_program);
         }
-
     }
 
     void updateBatchChunk()
     {
 
-        for (auto &&i : updatedChunks_indx)
+        for (auto &&i : updatedChunksPointers)
         {
             i->buildMesh();
             i->uploadToGPU();
         }
-        updatedChunks_indx.clear();
+        updatedChunksPointers.clear();
+    }
+    void updateBatchAppend()
+    {
+
+        for (auto &&i : appendedChunksPointers)
+        {
+            i->uploadToGPU();
+        }
+        appendedChunksPointers.clear();
     }
     Block *getBlockAtPos(glm::vec3 pos)
     {
@@ -184,14 +185,31 @@ public:
 
         return this->chunks[{cx, cz}];
     }
-    void AddChunkUpdateQuaue(glm::vec3 pos)
+    void AddChunkUpdateQuaue(glm::ivec3 pos)
     {
 
-        updatedChunks_indx.insert(getChunkAtPos(pos));
+        updatedChunksPointers.insert(getChunkAtPos(pos));
     }
+    void AddChunkUpdateQuaue(Chunk *chunkptr)
+    {
+
+        updatedChunksPointers.insert(chunkptr);
+    }
+    void AddChunkAppendQuaue(glm::ivec3 pos)
+    {
+        getChunkAtPos(pos)->AppendBlock(pos.x % chunkSize, pos.y, pos.z % chunkSize);
+        appendedChunksPointers.insert(getChunkAtPos(pos));
+    }
+    
     void setReferenceCamera(Camera *cam)
     {
         this->cam = cam;
+    }
+    void DestroyBlock(rayHit *rayhit)
+    {
+        rayhit->hitBlock->type = AIR;
+        AddChunkUpdateQuaue(rayhit->hitPostion);
+
     }
     ~ChunkManager() = default;
 };
