@@ -4,8 +4,8 @@ enum BlockType
 {
     AIR = 0,
     DIRT,
-    GRASS,
     STONE,
+    SAND,
     WATER
 };
 

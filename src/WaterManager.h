@@ -1,8 +1,7 @@
 #pragma once
 #include "CONSTANTS.h"
-
+#include "ChunkManager.h"
 #include "CoreS.h"
-class ChunkManager;
 class WaterManager
 {
 private:

@@ -33,6 +33,8 @@ Camera cam(cam_pos, cam_dir, Width, Height);
 
 Player *player;
 
+GLuint atlas;
+
 bool keys[256] = {false};
 void keyDown(unsigned char key, int x, int y)
 {
@@ -85,6 +87,8 @@ void display()
 
     // Updates Uniforms
     glUseProgram(program);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, atlas);
 
     glUniformMatrix4fv(camMatrix_pos, 1, GL_FALSE, glm::value_ptr(cam.viewMatrix));
     glUniformMatrix4fv(perspective_matrix_pos, 1, GL_FALSE, glm::value_ptr(cam.perspectiveMatrix));
@@ -149,14 +153,14 @@ int main(int argc, char *argv[])
 
     // var cre
     heightNoise = new FastNoiseLite();
-    heightNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    heightNoise->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
     chunk_manager = new ChunkManager(&program, &water_program);
     water_manager = new WaterManager(chunk_manager);
     player = new Player("Steve", &cam, chunk_manager, water_manager);
-    
+
     // Shader Creation
-    Shader shader_1("vertex.glsl", "fragment.glsl");
+    Shader shader_1("../shaders/vertex.glsl", "../shaders/fragment.glsl");
     shader_1.use();
     program = shader_1.ID;
 
@@ -172,7 +176,7 @@ int main(int argc, char *argv[])
     glUniform3fv(lightPos_uniformLocation, 1, lightPos);
 
     // setup water Shader
-    Shader waterShader("WaterVertex.glsl", "WaterFrag.glsl");
+    Shader waterShader("../shaders/WaterVertex.glsl", "../shaders/WaterFrag.glsl");
     waterShader.use();
     water_program = waterShader.ID;
 
@@ -191,6 +195,31 @@ int main(int argc, char *argv[])
     chunk_manager->genMapping();
 
     // WATER
+
+    // Upload Atlas
+
+    shader_1.use();
+    glGenTextures(1, &atlas);
+
+    glBindTexture(GL_TEXTURE_2D, atlas);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    int w, h, c;
+    stbi_set_flip_vertically_on_load(true);
+
+    // w = 256 , h = 256 . each block is  16*16f
+    unsigned char *data = stbi_load("../Texture/texture.png", &w, &h, &c, 4);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    stbi_image_free(data);
+
+    glUniform1i(glGetUniformLocation(program, "atlas"), 0); // setting it at slot 0
 
     // TESTING
 

@@ -6,18 +6,62 @@
 #include "CONSTANTS.h"
 using namespace std;
 static const float face_vert[6][6][3] = {
-    // +X (right)
-    {{0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}},
-    // -X (left)
-    {{-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, {-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}},
-    // +Y (top)
-    {{-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, 0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5}},
-    // -Y (bottom)
-    {{-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}},
-    // +Z (front)
-    {{-0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, {-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}},
-    // -Z (back)
-    {{-0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}}};
+    // +X (right)  — U=Z, V=Y
+    {{0.5, -0.5,  0.5},  // BL  uv0
+     {0.5, -0.5, -0.5},  // BR  uv1
+     {0.5,  0.5,  0.5},  // TL  uv2
+     {0.5,  0.5,  0.5},  // TL  uv2
+     {0.5, -0.5, -0.5},  // BR  uv1
+     {0.5,  0.5, -0.5}}, // TR  uv3
+
+    // -X (left)   — U=Z, V=Y
+    {{-0.5, -0.5, -0.5},  // BL  uv0
+     {-0.5, -0.5,  0.5},  // BR  uv1
+     {-0.5,  0.5, -0.5},  // TL  uv2
+     {-0.5,  0.5, -0.5},  // TL  uv2
+     {-0.5, -0.5,  0.5},  // BR  uv1
+     {-0.5,  0.5,  0.5}}, // TR  uv3
+
+    // +Y (top)    — U=X, V=Z
+    {{-0.5, 0.5,  0.5},  // BL  uv0
+     { 0.5, 0.5,  0.5},  // BR  uv1
+     {-0.5, 0.5, -0.5},  // TL  uv2
+     {-0.5, 0.5, -0.5},  // TL  uv2
+     { 0.5, 0.5,  0.5},  // BR  uv1
+     { 0.5, 0.5, -0.5}}, // TR  uv3
+
+    // -Y (bottom) — U=X, V=Z
+    {{-0.5, -0.5, -0.5},  // BL  uv0
+     { 0.5, -0.5, -0.5},  // BR  uv1
+     {-0.5, -0.5,  0.5},  // TL  uv2
+     {-0.5, -0.5,  0.5},  // TL  uv2
+     { 0.5, -0.5, -0.5},  // BR  uv1
+     { 0.5, -0.5,  0.5}}, // TR  uv3
+
+    // +Z (front)  — U=X, V=Y
+    {{-0.5, -0.5, 0.5},  // BL  uv0
+     { 0.5, -0.5, 0.5},  // BR  uv1
+     {-0.5,  0.5, 0.5},  // TL  uv2
+     {-0.5,  0.5, 0.5},  // TL  uv2
+     { 0.5, -0.5, 0.5},  // BR  uv1
+     { 0.5,  0.5, 0.5}}, // TR  uv3
+
+    // -Z (back)   — U=X, V=Y
+    {{ 0.5, -0.5, -0.5},  // BL  uv0
+     {-0.5, -0.5, -0.5},  // BR  uv1
+     { 0.5,  0.5, -0.5},  // TL  uv2
+     { 0.5,  0.5, -0.5},  // TL  uv2
+     {-0.5, -0.5, -0.5},  // BR  uv1
+     {-0.5,  0.5, -0.5}}, // TR  uv3
+};
+static const uint8_t uvLookup[6] = {
+    0, // v0
+    1, // v1
+    2, // v2
+    2, // v3
+    1, // v4
+    3  // v5
+};
 
 class Chunk
 {
@@ -27,9 +71,13 @@ private:
     unsigned int water_VAO, water_VBO, water_VBO2;
     int vertexCount;
     vector<float> mesh;
-    vector<int> typesdata;
+    vector<uint16_t> typesdata;
     vector<float> water_mesh;
     vector<int> water_typesdata;
+    uint32_t packType(int type, int face, int uv)
+    {
+        return (face) | (uv << 3) | (type << 5);
+    }
 
     bool isAir(int x, int y, int z)
     {
@@ -74,9 +122,8 @@ private:
             for (int i = 0; i < 6; i++)
             {
                 AddVertex(x, y, z, face_vert[face][i][0], face_vert[face][i][1], face_vert[face][i][2], mesh);
-                typesdata.push_back(blocks[x][y][z].type);
+                typesdata.push_back(packType(blocks[x][y][z].type, face, uvLookup[i]));
                 // send normal vector index along with it typesdata for (Normal,).
-                typesdata.push_back(face);
             }
         }
     }
@@ -86,6 +133,7 @@ private:
 public:
     pair<int, int> chunk_coordinates;
 
+    // TODO: Instead of Block data struct , us only BlockType
     Block blocks[chunkSize][chunkHeight][chunkSize];
 
     Chunk(pair<int, int> chunk_coordinate)
@@ -233,11 +281,10 @@ public:
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO2);
 
-        glBufferData(GL_ARRAY_BUFFER, sizeof(int) * typesdata.size(), typesdata.data(), GL_STATIC_DRAW);
-        glVertexAttribIPointer(1, 1, GL_INT, 2 * sizeof(int), 0);
-        glVertexAttribIPointer(2, 1, GL_INT, 2 * sizeof(int), (void *)(sizeof(int)));
+        glBufferData(GL_ARRAY_BUFFER, sizeof(uint16_t) * typesdata.size(), typesdata.data(), GL_STATIC_DRAW);
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_SHORT, sizeof(uint16_t), (void *)0);
+
         glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
 
         // for water mesh
 

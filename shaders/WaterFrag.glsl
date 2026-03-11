@@ -34,5 +34,5 @@ void main(){
 
     // calculate result
     vec3 result =  objectColor*(ambient) +specular;
-    FragColor = vec4(result, 1);
+    FragColor = vec4(result, 0.9);
 }

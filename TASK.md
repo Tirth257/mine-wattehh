@@ -12,7 +12,7 @@
 ## Phase 2: Graphical Improvement
 
 - [X] Basic Lighting
-- [] Texture
+- [X] Texture
 - [] Skybox
 - [] Shadows
 
