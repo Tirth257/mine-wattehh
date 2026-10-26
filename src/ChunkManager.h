@@ -1,215 +1,203 @@
 #pragma once
-#include "Chunk.h"
 #include "CONSTANTS.h"
+#include "Chunk.h"
 #include "CoreS.h"
-class ChunkManager
-{
+class ChunkManager {
 private:
-    int distance(int i, int j)
-    {
-        return abs(i - cam->cameraPos.x) + abs(j - cam->cameraPos.z);
-    }
-    int distance(pair<int, int> coord)
-    {
-        return abs(coord.first - cam->cameraPos.x) + abs(coord.second - cam->cameraPos.z);
-    }
-    Camera *cam;
-    unsigned int *program;
-    unsigned int *water_program;
+  int distance(int i, int j) {
+    return abs(i - cam->cameraPos.x) + abs(j - cam->cameraPos.z);
+  }
+  int distance(pair<int, int> coord) {
+    return abs(coord.first - cam->cameraPos.x) +
+           abs(coord.second - cam->cameraPos.z);
+  }
+  Camera *cam;
+  unsigned int *program;
+  unsigned int *water_program;
 
-    FastNoiseLite heightMap;
+  FastNoiseLite heightMap;
 
 public:
+  std::unordered_map<pair<int, int>, Chunk *, PairHash> chunks;
+  std::unordered_set<Chunk *> updatedChunksPointers;
+  std::unordered_set<Chunk *> appendedChunksPointers;
 
-    std::unordered_map<pair<int, int>, Chunk *, PairHash> chunks;
-    std::unordered_set<Chunk *> updatedChunksPointers;
-    std::unordered_set<Chunk *> appendedChunksPointers;
+  std::unordered_map<pair<int, int>, Chunk *, PairHash> to_draw_chunk;
 
-    std::unordered_map<pair<int, int>, Chunk *, PairHash> to_draw_chunk;
+  ChunkManager(unsigned int *program, unsigned int *water_program) {
+    this->program = program;
+    this->water_program = water_program;
+  }
 
-    ChunkManager(unsigned int *program, unsigned int *water_program)
-    {
-        this->program = program;
-        this->water_program = water_program;
-    }
+  void genMapping() {
+    int x = 0;
+    int z = 0;
+    for (int i = -renderDistance / 2; i <= renderDistance / 2; i++) {
+      for (int j = -renderDistance / 2 + abs(i);
+           j <= renderDistance / 2 - abs(i); j++) {
 
-    void genMapping()
-    {
-        int x = 0;
-        int z = 0;
-        for (int i = -renderDistance / 2; i <= renderDistance / 2; i++)
+        if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
         {
-            for (int j = -renderDistance / 2 + abs(i); j <= renderDistance / 2 - abs(i); j++)
-            {
+          to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
+        } else {
 
-                if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
-                {
-                    to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
-                }
-                else
-                {
-
-                    Chunk *tempChunk = new Chunk({i + x, j + z});
-                    tempChunk->GenerateTerrain();
-                    tempChunk->buildMesh();
-                    tempChunk->uploadToGPU();
-                    chunks[{i + x, j + z}] = tempChunk;
-                    to_draw_chunk[{i + x, j + z}] = tempChunk;
-                }
-            }
+          Chunk *tempChunk = new Chunk({i + x, j + z});
+          tempChunk->GenerateTerrain();
+          tempChunk->buildMesh();
+          tempChunk->uploadToGPU();
+          chunks[{i + x, j + z}] = tempChunk;
+          to_draw_chunk[{i + x, j + z}] = tempChunk;
         }
+      }
+    }
+  }
+
+  void updateMapping2() // TODO: Finish this efficient algorithm
+  {
+    // remove far chunks
+    for (auto &&chk : to_draw_chunk) {
+      if (distance(chk.first) > renderDistance / 2) {
+        to_draw_chunk.erase(chk.first);
+      }
     }
 
-    void updateMapping2() // TODO: Finish this efficient algorithm
-    {
-        // remove far chunks
-        for (auto &&chk : to_draw_chunk)
-        {
-            if (distance(chk.first) > renderDistance / 2)
+    // add closer chunks
+    pair<int, int> chunk_chunk_coordinate =
+        getChunkAtPos(cam->cameraPos)->chunk_coordinates;
+  }
+
+  void updateMapping() {
+    to_draw_chunk.clear();
+
+    // add closer chunks
+    pair<int, int> chunk_coordinate =
+        getChunkAtPos(cam->cameraPos)->chunk_coordinates;
+    int x = chunk_coordinate.first;
+    int z = chunk_coordinate.second;
+
+    /*
+            for (int i = x-renderDistance; i <= x + renderDistance; i++)
             {
-                to_draw_chunk.erase(chk.first);
-            }
-        }
-
-        // add closer chunks
-        pair<int, int> chunk_chunk_coordinate = getChunkAtPos(cam->cameraPos)->chunk_coordinates;
-    }
-
-    void updateMapping()
-    {
-        to_draw_chunk.clear();
-
-        // add closer chunks
-        pair<int, int> chunk_coordinate = getChunkAtPos(cam->cameraPos)->chunk_coordinates;
-        int x = chunk_coordinate.first;
-        int z = chunk_coordinate.second;
-
-        /*
-                for (int i = x-renderDistance; i <= x + renderDistance; i++)
+                for (int j = z-renderDistance+abs(i-renderDistance); j <=
+       z+renderDistance-abs(i-renderDistance); j++)
                 {
-                    for (int j = z-renderDistance+abs(i-renderDistance); j <= z+renderDistance-abs(i-renderDistance); j++)
+                   if (chunks.find({i, j}) != chunks.end()) // already generated
                     {
-                       if (chunks.find({i, j}) != chunks.end()) // already generated
-                        {
-                            to_draw_chunk[{i, j}] = chunks[{i, j}];
-                        }
-                        else
-                        {
-
-                            Chunk *tempChunk = new Chunk({i, j});
-                            tempChunk->GenerateTerrain();
-                            tempChunk->buildMesh();
-                            tempChunk->uploadToGPU();
-                            chunks[{i, j}] = tempChunk;
-                            to_draw_chunk[{i, j}] = tempChunk;
-                            cout << " creating a lot "<< endl  ;
-                        }
+                        to_draw_chunk[{i, j}] = chunks[{i, j}];
                     }
+                    else
+                    {
 
+                        Chunk *tempChunk = new Chunk({i, j});
+                        tempChunk->GenerateTerrain();
+                        tempChunk->buildMesh();
+                        tempChunk->uploadToGPU();
+                        chunks[{i, j}] = tempChunk;
+                        to_draw_chunk[{i, j}] = tempChunk;
+                        cout << " creating a lot "<< endl  ;
+                    }
                 }
 
-        */
-
-        for (int i = -renderDistance / 2; i <= renderDistance / 2; i++)
-        {
-            for (int j = -renderDistance / 2 + abs(i); j <= renderDistance / 2 - abs(i); j++)
-            {
-
-                if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
-                {
-                    to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
-                }
-                else
-                {
-
-                    Chunk *tempChunk = new Chunk({i + x, j + z});
-                    tempChunk->GenerateTerrain();
-                    tempChunk->buildMesh();
-                    tempChunk->uploadToGPU();
-                    chunks[{i + x, j + z}] = tempChunk;
-                    to_draw_chunk[{i + x, j + z}] = tempChunk;
-                }
             }
-        }
-    }
 
-    void draw()
-    {
+    */
 
-        for (auto &&i : to_draw_chunk)
+    for (int i = -renderDistance / 2; i <= renderDistance / 2; i++) {
+      for (int j = -renderDistance / 2 + abs(i);
+           j <= renderDistance / 2 - abs(i); j++) {
+
+        if (chunks.find({x + i, z + j}) != chunks.end()) // already generated
         {
-            i.second->draw(program, water_program);
+          to_draw_chunk[{i + x, j + z}] = chunks[{i + x, j + z}];
+        } else {
+
+          Chunk *tempChunk = new Chunk({i + x, j + z});
+          tempChunk->GenerateTerrain();
+          tempChunk->buildMesh();
+          tempChunk->uploadToGPU();
+          chunks[{i + x, j + z}] = tempChunk;
+          to_draw_chunk[{i + x, j + z}] = tempChunk;
         }
+      }
+    }
+  }
+
+  void draw() {
+
+    glm::vec3 camDir = cam->cameraDirection;
+    glm::vec3 camPos = cam->cameraPos;
+    for (auto &&i : to_draw_chunk) {
+      int cx = i.first.first;
+      int cz = i.first.second;
+      // Chunk center in world coordinates
+      glm::vec3 chunkCenter = {(cx + 0.5f) * chunkSize, chunkHeight * 0.5f,
+                               (cz + 0.5f) * chunkSize};
+      glm::vec3 toChunk = chunkCenter - camPos;
+      float distSq = toChunk.x * toChunk.x + toChunk.z * toChunk.z;
+      // Always render chunks close to the player (within 2 chunks)
+      // For further chunks, only render if in front of camera (with margin for
+      // chunk radius)
+      if (distSq < (2.0f * chunkSize) * (2.0f * chunkSize) ||
+          glm::dot(toChunk, camDir) > -chunkSize) {
+        i.second->draw(program, water_program);
+      }
     }
 
-    void updateBatchChunk()
-    {
+    void updateBatchChunk() {
 
-        for (auto &&i : updatedChunksPointers)
-        {
-            i->buildMesh();
-            i->uploadToGPU();
-        }
-        updatedChunksPointers.clear();
+      for (auto &&i : updatedChunksPointers) {
+        i->buildMesh();
+        i->uploadToGPU();
+      }
+      updatedChunksPointers.clear();
     }
-    void updateBatchAppend()
-    {
+    void updateBatchAppend() {
 
-        for (auto &&i : appendedChunksPointers)
-        {
-            i->uploadToGPU();
-        }
-        appendedChunksPointers.clear();
+      for (auto &&i : appendedChunksPointers) {
+        i->uploadToGPU();
+      }
+      appendedChunksPointers.clear();
     }
-    Block *getBlockAtPos(glm::vec3 pos)
-    {
-        int x = round(pos[0]);
-        int y = round(pos[1]);
-        int z = round(pos[2]);
+    Block *getBlockAtPos(glm::vec3 pos) {
+      int x = round(pos[0]);
+      int y = round(pos[1]);
+      int z = round(pos[2]);
 
-        int cx = floor((float)x / chunkSize);
-        int cz = floor((float)z / chunkSize);
+      int cx = floor((float)x / chunkSize);
+      int cz = floor((float)z / chunkSize);
 
-        int localX = mod(x, chunkSize);
-        int localZ = mod(z, chunkSize);
+      int localX = mod(x, chunkSize);
+      int localZ = mod(z, chunkSize);
 
-        Chunk *cptr = this->chunks[{cx, cz}];
-        return &cptr->blocks[localX][y][localZ];
+      Chunk *cptr = this->chunks[{cx, cz}];
+      return &cptr->blocks[localX][y][localZ];
 
-        // return nullptr;
+      // return nullptr;
     }
-    Chunk *getChunkAtPos(glm::vec3 pos)
-    {
-        int cx = floor((float)pos.x / chunkSize);
-        int cz = floor((float)pos.z / chunkSize);
+    Chunk *getChunkAtPos(glm::vec3 pos) {
+      int cx = floor((float)pos.x / chunkSize);
+      int cz = floor((float)pos.z / chunkSize);
 
-        return this->chunks[{cx, cz}];
+      return this->chunks[{cx, cz}];
     }
-    void AddChunkUpdateQuaue(glm::ivec3 pos)
-    {
+    void AddChunkUpdateQuaue(glm::ivec3 pos) {
 
-        updatedChunksPointers.insert(getChunkAtPos(pos));
+      updatedChunksPointers.insert(getChunkAtPos(pos));
     }
-    void AddChunkUpdateQuaue(Chunk *chunkptr)
-    {
+    void AddChunkUpdateQuaue(Chunk * chunkptr) {
 
-        updatedChunksPointers.insert(chunkptr);
+      updatedChunksPointers.insert(chunkptr);
     }
-    void AddChunkAppendQuaue(glm::ivec3 pos)
-    {
-        getChunkAtPos(pos)->AppendBlock(pos.x % chunkSize, pos.y, pos.z % chunkSize);
-        appendedChunksPointers.insert(getChunkAtPos(pos));
+    void AddChunkAppendQuaue(glm::ivec3 pos) {
+      getChunkAtPos(pos)->AppendBlock(pos.x % chunkSize, pos.y,
+                                      pos.z % chunkSize);
+      appendedChunksPointers.insert(getChunkAtPos(pos));
     }
-    
-    void setReferenceCamera(Camera *cam)
-    {
-        this->cam = cam;
-    }
-    void DestroyBlock(rayHit *rayhit)
-    {
-        rayhit->hitBlock->type = AIR;
-        AddChunkUpdateQuaue(rayhit->hitPostion);
 
+    void setReferenceCamera(Camera * cam) { this->cam = cam; }
+    void DestroyBlock(rayHit * rayhit) {
+      rayhit->hitBlock->type = AIR;
+      AddChunkUpdateQuaue(rayhit->hitPostion);
     }
     ~ChunkManager() = default;
-};
+  };
